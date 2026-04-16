@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"strings"
@@ -45,11 +46,27 @@ func getURLsFromHTML(html string, baseURL *url.URL) ([]string, error) {
 	}
 
 	urls := []string{}
+	containsParseError := false
 	doc.Find("a[href]").Each(func(_ int, s *goquery.Selection) {
-		if attr, exists := s.Attr("href"); exists {
-			urls = append(urls, attr)
+		attr, exists := s.Attr("href")
+		if !exists {
+			return
 		}
+
+		link, err := url.Parse(attr)
+		if err != nil {
+			containsParseError = true
+			return
+		}
+
+		absURL := baseURL.ResolveReference(link)
+		urls = append(urls, absURL.String())
 	})
 
-	return urls, nil
+	err = nil
+	if containsParseError {
+		err = errors.New("unable to parse all links")
+	}
+
+	return urls, err
 }

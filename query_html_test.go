@@ -9,10 +9,9 @@ import (
 
 func TestGetHeadingFromHTML(t *testing.T) {
 	tests := []struct {
-		name          string
-		html          string
-		expected      string
-		errorContains string
+		name     string
+		html     string
+		expected string
 	}{
 		{
 			name: "get h1 header",
@@ -56,10 +55,9 @@ func TestGetHeadingFromHTML(t *testing.T) {
 
 func TestGetFirstParagraphFromHTML(t *testing.T) {
 	tests := []struct {
-		name          string
-		html          string
-		expected      string
-		errorContains string
+		name     string
+		html     string
+		expected string
 	}{
 		{
 			name:     "get main paragraph",
@@ -102,6 +100,25 @@ func TestGetURLsFromHTML(t *testing.T) {
 			html:     `<html><body><a href="https://crawler-test.com"><span>Boot.dev</span></a></body></html>`,
 			expected: []string{"https://crawler-test.com"},
 		},
+		{
+			name:     "extract multiple urls",
+			inputURL: "https://crawler-test.com",
+			html:     `<html><body><a href="https://crawler-test.com"><span>Boot.dev</span></a><a href="https://somewhereelse.com/test">test</a></body></html>`,
+			expected: []string{"https://crawler-test.com", "https://somewhereelse.com/test"},
+		},
+		{
+			name:     "extract relative",
+			inputURL: "https://crawler-test.com",
+			html:     `<html><body><a href="/nextSite"><span>Boot.dev</span></a></body></html>`,
+			expected: []string{"https://crawler-test.com/nextSite"},
+		},
+		{
+			name:          "parse error",
+			inputURL:      "https://crawler-test.com",
+			html:          `<html><body><a href=":\\nextSite"><span>Boot.dev</span></a></body></html>`,
+			expected:      []string{},
+			errorContains: "unable to parse all links",
+		},
 	}
 
 	for _, test := range tests {
@@ -112,6 +129,11 @@ func TestGetURLsFromHTML(t *testing.T) {
 		}
 
 		actual, err := getURLsFromHTML(test.html, baseURL)
+		if err != nil && test.errorContains != err.Error() {
+			t.Errorf("get url returned error: %s", err)
+			return
+		}
+
 		if !reflect.DeepEqual(actual, test.expected) {
 			t.Errorf("expected %v, got %v", test.expected, actual)
 		}
