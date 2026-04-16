@@ -1,6 +1,8 @@
 package main
 
 import (
+	"net/url"
+	"reflect"
 	_ "strings"
 	"testing"
 )
@@ -83,5 +85,35 @@ func TestGetFirstParagraphFromHTML(t *testing.T) {
 				t.Errorf("Test %v - %s FAIL: expected: %s, actual: %v", i, tc.name, tc.expected, actual)
 			}
 		})
+	}
+}
+
+func TestGetURLsFromHTML(t *testing.T) {
+	tests := []struct {
+		name          string
+		inputURL      string
+		html          string
+		expected      []string
+		errorContains string
+	}{
+		{
+			name:     "extract url",
+			inputURL: "https://crawler-test.com",
+			html:     `<html><body><a href="https://crawler-test.com"><span>Boot.dev</span></a></body></html>`,
+			expected: []string{"https://crawler-test.com"},
+		},
+	}
+
+	for _, test := range tests {
+		baseURL, err := url.Parse(test.inputURL)
+		if err != nil {
+			t.Errorf("couldn't parse input URL: %v", err)
+			return
+		}
+
+		actual, err := getURLsFromHTML(test.html, baseURL)
+		if !reflect.DeepEqual(actual, test.expected) {
+			t.Errorf("expected %v, got %v", test.expected, actual)
+		}
 	}
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
@@ -34,4 +35,21 @@ func getFirstParagraphFromHTML(html string) string {
 		sel = doc.Find("p").First()
 	}
 	return sel.Text()
+}
+
+func getURLsFromHTML(html string, baseURL *url.URL) ([]string, error) {
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(html))
+	if err != nil {
+		fmt.Printf("warning: unexpected error retrieving urls: %s", err)
+		return []string{}, err
+	}
+
+	urls := []string{}
+	doc.Find("a[href]").Each(func(_ int, s *goquery.Selection) {
+		if attr, exists := s.Attr("href"); exists {
+			urls = append(urls, attr)
+		}
+	})
+
+	return urls, nil
 }
