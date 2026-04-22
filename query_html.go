@@ -71,6 +71,35 @@ func getURLsFromHTML(html string, baseURL *url.URL) ([]string, error) {
 	return urls, err
 }
 
-func getImagesFromHTML(htmlBody string, baseURL *url.URL) ([]string, error) {
-	return nil, nil
+func getImagesFromHTML(html string, baseURL *url.URL) ([]string, error) {
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(html))
+	if err != nil {
+		fmt.Printf("warning: unexpected error retrieving urls: %s", err)
+		return []string{}, err
+	}
+
+	urls := []string{}
+	containsParseError := false
+	doc.Find("img[src]").Each(func(_ int, s *goquery.Selection) {
+		attr, exists := s.Attr("src")
+		if !exists {
+			return
+		}
+
+		link, err := url.Parse(attr)
+		if err != nil {
+			containsParseError = true
+			return
+		}
+
+		absURL := baseURL.ResolveReference(link)
+		urls = append(urls, absURL.String())
+	})
+
+	err = nil
+	if containsParseError {
+		err = errors.New("unable to parse all sources")
+	}
+
+	return urls, err
 }

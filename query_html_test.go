@@ -124,18 +124,72 @@ func TestGetURLsFromHTML(t *testing.T) {
 	for _, test := range tests {
 		baseURL, err := url.Parse(test.inputURL)
 		if err != nil {
-			t.Errorf("couldn't parse input URL: %v", err)
+			t.Errorf("%s: couldn't parse input URL: %v", test.name, err)
 			return
 		}
 
 		actual, err := getURLsFromHTML(test.html, baseURL)
 		if err != nil && test.errorContains != err.Error() {
-			t.Errorf("get url returned error: %s", err)
+			t.Errorf("%s: get url returned error: %s", test.name, err)
 			return
 		}
 
 		if !reflect.DeepEqual(actual, test.expected) {
-			t.Errorf("expected %v, got %v", test.expected, actual)
+			t.Errorf("%s: expected %v, got %v", test.name, test.expected, actual)
+		}
+	}
+}
+
+func TestGetImagesFromHTML(t *testing.T) {
+	tests := []struct {
+		name          string
+		inputURL      string
+		html          string
+		expected      []string
+		errorContains string
+	}{
+		{
+			name:     "extract image",
+			inputURL: "https://crawler-test.com",
+			html:     `<html><body><img src="/logo.png" alt="Logo"></body></html>`,
+			expected: []string{"https://crawler-test.com/logo.png"},
+		},
+		{
+			name:     "extract multiple images",
+			inputURL: "https://crawler-test.com",
+			html:     `<html><body><img src="/logo.png" alt="Logo"><img src="/andanotherone.jpg"></body></html>`,
+			expected: []string{"https://crawler-test.com/logo.png", "https://crawler-test.com/andanotherone.jpg"},
+		},
+		{
+			name:     "extract absolute",
+			inputURL: "https://crawler-test.com",
+			html:     `<html><body><img src="https://somewhereelse.com/logo.png" alt="Logo"></body></html>`,
+			expected: []string{"https://somewhereelse.com/logo.png"},
+		},
+		{
+			name:          "parse error",
+			inputURL:      "https://crawler-test.com",
+			html:          `<html><body><img src=":\\nextSite"><span>Boot.dev</span></a></body></html>`,
+			expected:      []string{},
+			errorContains: "unable to parse all sources",
+		},
+	}
+
+	for _, test := range tests {
+		baseURL, err := url.Parse(test.inputURL)
+		if err != nil {
+			t.Errorf("%s: couldn't parse input URL: %v", test.name, err)
+			return
+		}
+
+		actual, err := getImagesFromHTML(test.html, baseURL)
+		if err != nil && test.errorContains != err.Error() {
+			t.Errorf("%s: get url returned error: %s", test.name, err)
+			return
+		}
+
+		if !reflect.DeepEqual(actual, test.expected) {
+			t.Errorf("%s: expected %v, got %v", test.name, test.expected, actual)
 		}
 	}
 }
