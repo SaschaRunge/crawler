@@ -9,6 +9,14 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
+type PageData struct {
+	URL            string
+	Heading        string
+	FirstParagraph string
+	OutgoingLinks  []string
+	ImageURLs      []string
+}
+
 func getHeadingFromHTML(html string) string {
 	doc, err := goquery.NewDocumentFromReader(strings.NewReader(html))
 	if err != nil {
@@ -52,6 +60,7 @@ func getURLsFromHTML(html string, baseURL *url.URL) ([]string, error) {
 		if !exists {
 			return
 		}
+		attr = strings.TrimSpace(attr)
 
 		link, err := url.Parse(attr)
 		if err != nil {
@@ -102,4 +111,8 @@ func getImagesFromHTML(html string, baseURL *url.URL) ([]string, error) {
 	}
 
 	return urls, err
+}
+
+func extractPageData(html, pageURL string) PageData {
+	return PageData{}
 }
