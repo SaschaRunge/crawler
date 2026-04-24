@@ -114,5 +114,7 @@ func getImagesFromHTML(html string, baseURL *url.URL) ([]string, error) {
 }
 
 func extractPageData(html, pageURL string) PageData {
+	//dummy
+
 	return PageData{}
 }
