@@ -119,12 +119,12 @@ func extractPageData(html, pageURL string) PageData {
 		return PageData{}
 	}
 
-	links, err := getImagesFromHTML(html, parsedURL)
+	links, err := getURLsFromHTML(html, parsedURL)
 	if err != nil {
 		return PageData{}
 	}
 
-	images, err := getURLsFromHTML(html, parsedURL)
+	images, err := getImagesFromHTML(html, parsedURL)
 	if err != nil {
 		return PageData{}
 	}
