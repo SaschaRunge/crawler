@@ -240,18 +240,38 @@ func TestExtractPageData(t *testing.T) {
 			},
 		},
 		{
-			name:     "empty on error",
+			name:     "invalid link",
 			inputURL: "https://crawler-test.com",
 			inputBody: `<html><body>
 				<h1>Test Title</h1>
 				<p>This is the first paragraph.</p>
-				<a href="\\:ßasdhofhasof/link1">Link 1</a>
-				<a href="/link2">Link 2</a>
-				<a href="https://external.adress/popeye">Link 3</a>
+				<a href="\\:somewhere/link1">Link 1</a>
 				<img src="/image1.jpg" alt="Image 1">
-				<img src="/image2.jpg">
 			</body></html>`,
-			expected: PageData{},
+			expected: PageData{
+				URL:            "https://crawler-test.com",
+				Heading:        "Test Title",
+				FirstParagraph: "This is the first paragraph.",
+				OutgoingLinks:  nil,
+				ImageURLs:      []string{"https://crawler-test.com/image1.jpg"},
+			},
+		},
+		{
+			name:     "invalid image",
+			inputURL: "https://crawler-test.com",
+			inputBody: `<html><body>
+				<h1>Test Title</h1>
+				<p>This is the first paragraph.</p>
+				<a href="/link1">Link 1</a>
+				<img src=":\\somewhere/image1.jpg" alt="Image 1">
+			</body></html>`,
+			expected: PageData{
+				URL:            "https://crawler-test.com",
+				Heading:        "Test Title",
+				FirstParagraph: "This is the first paragraph.",
+				OutgoingLinks:  []string{"https://crawler-test.com/link1"},
+				ImageURLs:      nil,
+			},
 		},
 	}
 

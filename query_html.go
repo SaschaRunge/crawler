@@ -116,17 +116,21 @@ func getImagesFromHTML(html string, baseURL *url.URL) ([]string, error) {
 func extractPageData(html, pageURL string) PageData {
 	parsedURL, err := url.Parse(pageURL)
 	if err != nil {
-		return PageData{}
+		return PageData{
+			URL:            pageURL,
+			Heading:        getHeadingFromHTML(html),
+			FirstParagraph: getFirstParagraphFromHTML(html),
+		}
 	}
 
 	links, err := getURLsFromHTML(html, parsedURL)
 	if err != nil {
-		return PageData{}
+		links = nil
 	}
 
 	images, err := getImagesFromHTML(html, parsedURL)
 	if err != nil {
-		return PageData{}
+		images = nil
 	}
 
 	return PageData{
