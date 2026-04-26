@@ -2,12 +2,21 @@ package main
 
 import (
 	"fmt"
+	"os"
 )
 
 func main() {
-	fmt.Println("Hello, World!")
+	args := os.Args[1:]
 
-	html := "<html><body><h1>Welcome to Boot.dev</h1><p>outside of main</p><main><p>Learn to code by building real projects.</p><p>This is the second paragraph.</p></main></body></html>"
-	getFirstParagraphFromHTML(html)
+	if len(args) < 1 {
+		fmt.Println("no website provided")
+		os.Exit(1)
+	}
+	if len(args) > 1 {
+		fmt.Println("too many arguments provided")
+		os.Exit(1)
+	}
 
+	baseURL := args[0]
+	fmt.Printf("starting crawl of: %s\n", baseURL)
 }
