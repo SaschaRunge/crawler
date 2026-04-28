@@ -3,19 +3,24 @@ package main
 import (
 	"fmt"
 	"net/url"
+	"sync"
+	"time"
 )
 
-func crawlPage(rawBaseURL, rawCurrentURL string, pages map[string]int) {
-	baseURL, err := url.Parse(rawBaseURL)
-	if err != nil {
-		fmt.Printf("invalid base url: %s, %s\n", rawBaseURL, err)
-		return
-	}
+type config struct {
+	pages              map[string]PageData
+	baseURL            *url.URL
+	mu                 *sync.Mutex
+	concurrencyControl chan struct{}
+	wg                 *sync.WaitGroup
+}
+
+func (cfg *config) crawlPage(rawCurrentURL string) {
 	currentURL, err := url.Parse(rawCurrentURL)
 	if err != nil {
 		return
 	}
-	if baseURL.Hostname() != currentURL.Hostname() {
+	if cfg.baseURL.Hostname() != currentURL.Hostname() {
 		return
 	}
 
@@ -25,11 +30,9 @@ func crawlPage(rawBaseURL, rawCurrentURL string, pages map[string]int) {
 		return
 	}
 
-	if _, ok := pages[normalizedURL]; ok {
-		pages[normalizedURL]++
+	if _, ok := cfg.pages[normalizedURL]; ok {
 		return
 	}
-	pages[normalizedURL] = 1
 
 	fmt.Printf("crawling %s ...\n", currentURL.String())
 	fmt.Println("fetching html ...")
@@ -39,15 +42,17 @@ func crawlPage(rawBaseURL, rawCurrentURL string, pages map[string]int) {
 		return
 	}
 
+	cfg.pages[normalizedURL] = extractPageData(html, currentURL.String())
+
 	fmt.Println("extracting urls ...")
-	urls, err := getURLsFromHTML(html, baseURL)
+	urls, err := getURLsFromHTML(html, cfg.baseURL)
 	if err != nil {
 		fmt.Printf("error extracting urls: %s\n", err)
 		return
 	}
 
-	//time.Sleep(time.Millisecond * 500)
+	time.Sleep(time.Millisecond * 500)
 	for _, u := range urls {
-		crawlPage(rawBaseURL, u, pages)
+		cfg.crawlPage(u)
 	}
 }
