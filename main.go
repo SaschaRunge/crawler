@@ -7,6 +7,10 @@ import (
 	"sync"
 )
 
+const (
+	maxConcurrentRoutines = 10
+)
+
 func main() {
 	args := os.Args[1:]
 
@@ -28,11 +32,14 @@ func main() {
 		pages:              map[string]PageData{},
 		baseURL:            baseURL,
 		mu:                 &sync.Mutex{},
-		concurrencyControl: make(chan struct{}),
+		concurrencyControl: make(chan struct{}, maxConcurrentRoutines),
 		wg:                 &sync.WaitGroup{},
 	}
 
-	cfg.crawlPage(baseURL.String())
+	cfg.wg.Go(func() {
+		cfg.crawlPage(baseURL.String())
+	})
+	cfg.wg.Wait()
 	fmt.Println("done, found the following references:")
 
 	for k, v := range cfg.pages {

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"sync"
-	"time"
+	_ "time"
 )
 
 type config struct {
@@ -30,29 +30,30 @@ func (cfg *config) crawlPage(rawCurrentURL string) {
 		return
 	}
 
-	if _, ok := cfg.pages[normalizedURL]; ok {
+	cfg.mu.Lock()
+	_, visited := cfg.pages[normalizedURL]
+	cfg.mu.Unlock()
+	if visited {
 		return
 	}
 
+	cfg.concurrencyControl <- struct{}{}
 	fmt.Printf("crawling %s ...\n", currentURL.String())
-	fmt.Println("fetching html ...")
 	html, err := getHTML(currentURL.String())
 	if err != nil {
 		fmt.Printf("error fetching html for %s: %s\n", currentURL.String(), err)
 		return
 	}
+	<-cfg.concurrencyControl
 
-	cfg.pages[normalizedURL] = extractPageData(html, currentURL.String())
+	data := extractPageData(html, currentURL.String())
+	cfg.mu.Lock()
+	cfg.pages[normalizedURL] = data
+	cfg.mu.Unlock()
 
-	fmt.Println("extracting urls ...")
-	urls, err := getURLsFromHTML(html, cfg.baseURL)
-	if err != nil {
-		fmt.Printf("error extracting urls: %s\n", err)
-		return
-	}
-
-	time.Sleep(time.Millisecond * 500)
-	for _, u := range urls {
-		cfg.crawlPage(u)
+	for _, link := range data.OutgoingLinks {
+		cfg.wg.Go(func() {
+			cfg.crawlPage(link)
+		})
 	}
 }
