@@ -8,6 +8,7 @@ import (
 func crawlPage(rawBaseURL, rawCurrentURL string, pages map[string]int) {
 	baseURL, err := url.Parse(rawBaseURL)
 	if err != nil {
+		fmt.Printf("invalid base url: %s, %s\n", rawBaseURL, err)
 		return
 	}
 	currentURL, err := url.Parse(rawCurrentURL)
@@ -20,6 +21,7 @@ func crawlPage(rawBaseURL, rawCurrentURL string, pages map[string]int) {
 
 	normalizedURL, err := normalizeURL(rawCurrentURL)
 	if err != nil {
+		fmt.Printf("unable to normalize url, shouldn't happen: %s, %s\n", rawCurrentURL, err)
 		return
 	}
 
@@ -29,11 +31,11 @@ func crawlPage(rawBaseURL, rawCurrentURL string, pages map[string]int) {
 	}
 	pages[normalizedURL] = 1
 
-	fmt.Printf("crawling %s ...\n", normalizedURL)
+	fmt.Printf("crawling %s ...\n", currentURL.String())
 	fmt.Println("fetching html ...")
-	html, err := getHTML(normalizedURL)
+	html, err := getHTML(currentURL.String())
 	if err != nil {
-		fmt.Printf("error fetching html for %s: %s\n", normalizedURL, err)
+		fmt.Printf("error fetching html for %s: %s\n", currentURL.String(), err)
 		return
 	}
 
@@ -44,6 +46,7 @@ func crawlPage(rawBaseURL, rawCurrentURL string, pages map[string]int) {
 		return
 	}
 
+	//time.Sleep(time.Millisecond * 500)
 	for _, u := range urls {
 		crawlPage(rawBaseURL, u, pages)
 	}
