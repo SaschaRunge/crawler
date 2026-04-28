@@ -8,6 +8,10 @@ import (
 	"sync"
 )
 
+const (
+	file string = "./report.json"
+)
+
 func main() {
 	args := os.Args[1:]
 
@@ -51,9 +55,9 @@ func main() {
 		cfg.crawlPage(baseURL.String())
 	})
 	cfg.wg.Wait()
-	fmt.Println("done, found the following references:")
-
-	for k, v := range cfg.pages {
-		fmt.Printf("%s: %s\n", k, v.Heading)
+	fmt.Printf("done. writing to: %s\n", file)
+	if err := writeJSONReport(cfg.pages, file); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
 	}
 }
