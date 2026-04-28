@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/url"
 	"sync"
-	_ "time"
 )
 
 type config struct {
@@ -30,21 +29,18 @@ func (cfg *config) crawlPage(rawCurrentURL string) {
 		return
 	}
 
-	cfg.mu.Lock()
-	_, visited := cfg.pages[normalizedURL]
-	cfg.mu.Unlock()
-	if visited {
+	if isFirstVisit := cfg.addPageVisit(normalizedURL); !isFirstVisit {
 		return
 	}
 
 	cfg.concurrencyControl <- struct{}{}
 	fmt.Printf("crawling %s ...\n", currentURL.String())
 	html, err := getHTML(currentURL.String())
+	<-cfg.concurrencyControl
 	if err != nil {
 		fmt.Printf("error fetching html for %s: %s\n", currentURL.String(), err)
 		return
 	}
-	<-cfg.concurrencyControl
 
 	data := extractPageData(html, currentURL.String())
 	cfg.mu.Lock()
@@ -56,4 +52,16 @@ func (cfg *config) crawlPage(rawCurrentURL string) {
 			cfg.crawlPage(link)
 		})
 	}
+}
+
+func (cfg *config) addPageVisit(normalizedURL string) (isFirstVisit bool) {
+	cfg.mu.Lock()
+	defer cfg.mu.Unlock()
+
+	if _, visited := cfg.pages[normalizedURL]; visited {
+		return false
+	}
+
+	cfg.pages[normalizedURL] = PageData{}
+	return true
 }
