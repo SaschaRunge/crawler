@@ -11,13 +11,13 @@ func getHTML(rawURL string) (string, error) {
 	client := http.DefaultClient
 	req, err := http.NewRequest("GET", rawURL, nil)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error building html request: %w", err)
 	}
 
 	req.Header.Add("User-Agent", "BootCrawler/1.0")
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error executing html request: %w", err)
 	}
 	if resp.StatusCode >= 400 {
 		return "", fmt.Errorf("response returned error type status: %d", resp.StatusCode)
@@ -30,7 +30,7 @@ func getHTML(rawURL string) (string, error) {
 
 	html, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error reading response body: %w", err)
 	}
 
 	return string(html), nil

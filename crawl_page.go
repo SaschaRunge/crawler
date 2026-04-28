@@ -12,6 +12,7 @@ type config struct {
 	mu                 *sync.Mutex
 	concurrencyControl chan struct{}
 	wg                 *sync.WaitGroup
+	maxPages           int
 }
 
 func (cfg *config) crawlPage(rawCurrentURL string) {
@@ -29,7 +30,7 @@ func (cfg *config) crawlPage(rawCurrentURL string) {
 		return
 	}
 
-	if isFirstVisit := cfg.addPageVisit(normalizedURL); !isFirstVisit {
+	if stop := cfg.tryReservePage(normalizedURL); stop {
 		return
 	}
 
@@ -54,14 +55,23 @@ func (cfg *config) crawlPage(rawCurrentURL string) {
 	}
 }
 
-func (cfg *config) addPageVisit(normalizedURL string) (isFirstVisit bool) {
+func (cfg *config) tryReservePage(normalizedURL string) (stop bool) {
 	cfg.mu.Lock()
 	defer cfg.mu.Unlock()
 
 	if _, visited := cfg.pages[normalizedURL]; visited {
-		return false
+		return true
+	}
+
+	if cfg.stopCrawlingLocked() {
+		return true
 	}
 
 	cfg.pages[normalizedURL] = PageData{}
-	return true
+	return false
+}
+
+// caller needs to lock
+func (cfg *config) stopCrawlingLocked() bool {
+	return len(cfg.pages) >= cfg.maxPages
 }
